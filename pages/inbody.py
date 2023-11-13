@@ -6,6 +6,8 @@ import pytesseract
 from pytesseract import Output
 import re
 from openai import OpenAI
+from config import OPENAI_API_KEY
+
 
 
 st.markdown("""
@@ -97,10 +99,11 @@ if uploaded_file is not None:
     for i, img_part in enumerate(img_parts):
         st.image(img_part, channels="BGR", use_column_width=True)
 
+    # 생성중
+    st.markdown("<h2 class='result-header'>GPT 응답중 ... </h2>", unsafe_allow_html=True)
+
     # GPT API KEY 정보
-    client = OpenAI(
-        api_key="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"
-    )
+    client = OpenAI(api_key=OPENAI_API_KEY)
 
     # gpt-3.5-turbo 를 사용하여 message 형식 만들기
     completion = client.chat.completions.create(
@@ -112,5 +115,5 @@ if uploaded_file is not None:
     )
 
     # GPT API 응답 출력
-    st.markdown("<h2 class='result-header'>GPT 건강 지도 응답</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 class='result-header'>GPT 응답 결과</h2>", unsafe_allow_html=True)
     st.markdown(completion.choices[0].message.content)
