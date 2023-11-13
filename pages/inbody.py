@@ -1,11 +1,12 @@
+import openai
 import streamlit as st
 import cv2
 import numpy as np
 import pytesseract
 from pytesseract import Output
 import re
-import os
-import openai
+from openai import OpenAI
+
 
 st.markdown("""
 <style>
@@ -31,19 +32,28 @@ body {
     font-size: 20px;
     color: #555;
 }
+.description {
+    font-size: 20px;
+    text-align: center;
+}
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown("""
-<div class="big-font">
-    인바디 사진 분석기
-</div>
+<p>
+    <div class="big-font">
+        인바디 사진 분석기
+    </div>
+</p>    
 """, unsafe_allow_html=True)
 
 st.markdown("""
-이 애플리케이션은 인바디 사진을 분석하여 체중, 골격근량, 체지방량을 알려줍니다.  
-사진을 업로드하면 결과를 확인할 수 있습니다.
-""")
+<div class="description">
+    <p>이 애플리케이션은 인바디 사진을 분석하여 체중, 골격근량, 체지방량을 알려줍니다.<br /> 
+    사진을 업로드하면 결과를 확인할 수 있습니다.</p> 
+</div>
+""", unsafe_allow_html=True)
+
 
 uploaded_file = st.file_uploader("인바디 사진을 업로드하세요", type=["jpg", "png"], key="1")
 
@@ -82,45 +92,25 @@ if uploaded_file is not None:
     st.markdown(f"<p class='result-text'>골격근량: {muscle}</p>", unsafe_allow_html=True)
     st.markdown(f"<p class='result-text'>체지방량: {fat}</p>", unsafe_allow_html=True)
 
-    # 방향성 제공
-    if weight and muscle and fat:
-        muscle_ratio = muscle / weight * 100
-        fat_ratio = fat / weight * 100
-
-        if muscle_ratio > 50:
-            st.success("근육량이 많아서 훌륭합니다. 현재의 운동량을 유지하시는 것이 좋겠습니다.")
-        else:
-            st.warning("근육량이 더 필요합니다. 규칙적인 운동을 통해 근육량을 늘려보세요.")
-
     # 이미지 출력
     st.markdown("<h2 class='result-header'>분석한 이미지 부분</h2>", unsafe_allow_html=True)
     for i, img_part in enumerate(img_parts):
         st.image(img_part, channels="BGR", use_column_width=True)
 
-
-# OpenAI API 키 설정
-OPENAI_YOUR_KEY = "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"
-openai.api_key = OPENAI_YOUR_KEY
-
-# 사용 모델 설정 - gpt-3.5-turbo
-MODEL = "text-davinci-002"
-
-# Streamlit 애플리케이션
-st.title('건강 지도')
-
-# OpenAI에 건강 관련 질문을 전달하고 응답을 받는 함수
-def get_health_advice(weight, muscle, fat):
-    prompt = f"체중: {weight}, 골격근량: {muscle}, 체지방량: {fat}. 건강 지도를 알려주세요."
-    response = openai.Completion.create(
-        engine=MODEL,
-        prompt=prompt,
-        max_tokens=100
+    # GPT API KEY 정보
+    client = OpenAI(
+        api_key="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"
     )
-    return response.choices[0].text.strip()
 
-# ChatGPT를 통해 건강 지도 가져오기
-health_advice = get_health_advice(weight, muscle, fat)
+    # gpt-3.5-turbo 를 사용하여 message 형식 만들기
+    completion = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": f"체중: {weight}, 골격근량: {muscle}, 체지방량: {fat}. 건강 지도를 알려주세요."}
+        ]
+    )
 
-st.write("건강 지도:", health_advice)  # Streamlit에 건강 지도 출력
-
-
+    # GPT API 응답 출력
+    st.markdown("<h2 class='result-header'>GPT 건강 지도 응답</h2>", unsafe_allow_html=True)
+    st.markdown(completion.choices[0].message.content)
